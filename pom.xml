@@ -17,6 +17,7 @@
         <hadoop.version>2.6.0</hadoop.version>
         <spark.version>2.1.0</spark.version>
         <hive.version>1.1.0</hive.version>
+        <org.apache.zookeeper.version>3.4.6</org.apache.zookeeper.version>
     </properties>
 
     <dependencies>
@@ -84,11 +85,6 @@
         <artifactId>spark-streaming-kafka-0-10_${scala.version}</artifactId>
         <version>${spark.version}</version>
         </dependency>
-        <!--<dependency>-->
-            <!--<groupId>org.apache.spark</groupId>-->
-            <!--<artifactId>spark-streaming-kafka_${scala.version}</artifactId>-->
-            <!--<version>1.6.0</version>-->
-        <!--</dependency>-->
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-mllib_${scala.version}</artifactId>
@@ -110,9 +106,15 @@
             <version>4.12</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-sql_2.10</artifactId>
-            <version>${spark.version}</version>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>0.10.2.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.zookeeper</groupId>
+            <artifactId>zookeeper</artifactId>
+            <version>${org.apache.zookeeper.version}</version>
         </dependency>
         <dependency>
             <groupId>com.janeluo</groupId>
@@ -136,7 +138,6 @@
             </snapshots>
         </repository>
     </repositories>
-
     <build>
         <plugins>
             <plugin>
@@ -148,7 +149,45 @@
                     <target>1.8</target>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>2.4.3</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <transformers>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.wxstc.dl.ProducerDemo</mainClass>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
-
     </build>
+
+ <!--   <build>
+    <sourceDirectory>src/main/java</sourceDirectory>
+    <testSourceDirectory>src/test/java</testSourceDirectory>
+    <plugins>
+
+    </plugins>
+    </build>-->
 </project>
