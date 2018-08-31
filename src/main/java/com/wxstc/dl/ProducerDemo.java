@@ -3,6 +3,7 @@ package com.wxstc.dl;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.utils.Utils;
 
 import java.util.Properties;
 import java.util.concurrent.Future;
@@ -14,6 +15,7 @@ public class ProducerDemo implements Runnable{
     public ProducerDemo(String topicName) {
         Properties props = new Properties();
         props.put("bootstrap.servers", "AnserInsight01:9092,AnserInsight02:9092,AnserInsight03:9092");//连接kafka集群 broker 列表
+//        props.put("bootstrap.servers", "192.168.0.16:9092");
         /**
          * 此配置是 Producer 在确认一个请求发送完成之前需要收到的反馈信息的数量。 这个参数是为了保证发送请求的可靠性。以下配置方式是允许的：
          acks=0 如果设置为0，则 producer 不会等待服务器的反馈。该消息会被立刻添加到 socket buffer 中并认为已经发送完成。在这种情况下，服务器是否收到请求是没法保证的，并且参数retries也不会生效（因为客户端无法获得失败信息）。每个记录返回的 offset 总是被设置为-1。
@@ -59,16 +61,16 @@ public class ProducerDemo implements Runnable{
                 System.out.println("成功发送了"+messageNo+"条");
                 producer.send(new ProducerRecord<String, String>(topic, "Message", messageStr));
                 //生产了10条就打印
-                if(messageNo%100==0){
-                    //System.out.println("发送的信息:" + messageStr);
-                }
+//                if(messageNo%100==0){
+//                    //System.out.println("发送的信息:" + messageStr);
+//                }
                 //生产100条就退出
-                if(messageNo%100==0){
+                if(messageNo%10==0){
                     System.out.println("成功发送了"+messageNo+"条");
                     break;
                 }
                 messageNo++;
-//				Utils.sleep(1);
+				Utils.sleep(1);
             }
         } catch (Exception e) {
             e.printStackTrace();
