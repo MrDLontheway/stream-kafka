@@ -11,13 +11,6 @@ object SparkStructuredStreaming {
     val Array(brokers, topics, groupId, zkQuorum) = args
 
     val spark = SparkSession.builder().config(new SparkConf().setMaster("local[*]"))//.enableHiveSupport()
-//      .config("es.nodes", "47.94.196.195")
-//      //HTTP默认端口为9200
-//      .config("es.port", "9200")
-//      .config("es.index.auto.create", "true")
-//      .config("pushdown", "true")
-//      .config("es.nodes.wan.only", "true")
-//      .config("es.mapping.date.rich", "false")
       .getOrCreate()
     import spark.implicits._
     val df = spark

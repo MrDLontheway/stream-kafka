@@ -21,6 +21,7 @@ object StreamingWordCount {
     iterator.flatMap { case (x, y, z) => Some(y.sum + z.getOrElse(0)).map(n => (x, n)) }
   }
 
+  //业务处理
   def myDealService(rdd: RDD[ConsumerRecord[String, String]], offsetRanges: Array[OffsetRange]) = {
     rdd.foreachPartition(iter => {
       val o: OffsetRange = offsetRanges(TaskContext.get.partitionId)
@@ -58,12 +59,6 @@ object StreamingWordCount {
 
     val Array(brokers, topics, groupId, zkQuorum) = args
     val topicsSet = topics.split(",")
-    //        val kafkaParams = Map[String, String](
-    //          "metadata.broker.list" -> brokers,
-    //          "group.id" -> groupId,
-    //          "auto.offset.reset" -> "smallest"
-    //          //,"zookeeper.connect" -> ""
-    //        )
 
     val kafkaParams = Map[String, Object](
       "bootstrap.servers" -> brokers, //"115.159.93.95:9092,115.159.78.168:9092,115.159.222.161:9092",
@@ -73,57 +68,33 @@ object StreamingWordCount {
       "auto.offset.reset" -> "earliest",
       "enable.auto.commit" -> (false: java.lang.Boolean)
     )
-
+    //直连方式接入kafka数据流
     val messages = KafkaUtils.createDirectStream[String, String](
       ssc,
       PreferConsistent,
       Subscribe[String, String](topicsSet, kafkaParams)
     )
-
+    //拿到数据流内需要的数据 key value
     val ds2 = messages.map(rec=>{
       (rec.key(),rec.value())
     })
 
     val ds3 = ds2.updateStateByKey(myUpstate,new HashPartitioner(ssc.sparkContext.defaultParallelism), true)
+
+    /**
+      * 拿到数据流后对每个  微批次 也就是rdd进行业务流程操作 这里需要注意的偏移量的管理问题
+      * 1.通过kafka自动管理偏移量  (不推荐 不高可用，容易导致数据重复消费)
+      * 2.自己手动管理偏移量  (推荐，但是需要自己维护偏移量  可以保存zk，hdfs 多种途径)
+      * 3.自己手动提交偏移量   (推荐，可以保证数据消费可靠性，以及开发的简易型 )
+      * 这里我采用的是第三种  这里再次提醒一下消费者偏移量建议用kafka的方式 不要用老版zk的方式
+      */
     messages.foreachRDD(rdd => {
       val offsetRanges = rdd.asInstanceOf[HasOffsetRanges].offsetRanges
       myDealService(rdd,offsetRanges)
-      println("commit")
       messages.asInstanceOf[CanCommitOffsets].commitAsync(offsetRanges)
     })
 
     val ds1 = messages.map(record => (record.key, record.value))
-    //val km = new KafkaManager(kafkaParams)
-    var kafkaStream: InputDStream[ConsumerRecord[String, String]] = null
-    //socket 接收数据 127.0.0.1
-    //    val zk = new ZkClient(zkQuorum)
-    //    var fromOffsets: Map[TopicPartition, Long] = Map() //kafka 偏移量管理
-    //
-    //    val stream = if (zk.exists("")) {//zk.znodeIsExists(s"${topic}offset")
-    //      val nor = zk.znodeDataGet(s"${topic}offset")
-    //      val newOffset = Map(new TopicPartition(nor(0).toString, nor(1).toInt) -> nor(2).toLong)//创建以topic，分区为k 偏移度为v的map
-    //      println(s"[ DealFlowBills2 ] --------------------------------------------------------------------")
-    //      println(s"[ DealFlowBills2 ] topic ${nor(0).toString}")
-    //      println(s"[ DealFlowBills2 ] Partition ${nor(1).toInt}")
-    //      println(s"[ DealFlowBills2 ] offset ${nor(2).toLong}")
-    //      println(s"[ DealFlowBills2 ] zk中取出来的kafka偏移量★★★ $newOffset")
-    //      println(s"[ DealFlowBills2 ] --------------------------------------------------------------------")
-    //      KafkaUtils.createDirectStream[String, String](ssc, PreferConsistent, Subscribe[String, String](topics, kafkaParams, newOffset))
-    //    } else {
-    //      println(s"[ DealFlowBills2 ] --------------------------------------------------------------------")
-    //      println(s"[ DealFlowBills2 ] 第一次计算,没有zk偏移量文件")
-    //      println(s"[ DealFlowBills2 ] 手动创建一个偏移量文件 ${topic}offset 默认从0号分区 0偏移度开始计算")
-    //      println(s"[ DealFlowBills2 ] --------------------------------------------------------------------")
-    //      zk.znodeCreate(s"${topic}offset", s"$topic,0,0")
-    //      val nor = zk.znodeDataGet(s"${topic}offset")
-    //      val newOffset = Map(new TopicPartition(nor(0).toString, nor(1).toInt) -> nor(2).toLong)
-    //      KafkaUtils.createDirectStream[String, String](ssc, PreferConsistent, Subscribe[String, String](topics, kafkaParams, newOffset))
-    //    }
-
-    //    val Array(zkQuorum, group, topics, numThreads) = args
-
-    //    val topicMap = topics.split(",").map((_, numThreads.toInt)).toMap
-    //    val messages = KafkaUtils.createStream(ssc, zkQuorum, group, topicMap, StorageLevel.MEMORY_AND_DISK_SER)
     ds1.foreachRDD(rdd => {
       println(rdd.count())
     })

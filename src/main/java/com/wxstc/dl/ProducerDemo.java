@@ -59,7 +59,13 @@ public class ProducerDemo implements Runnable{
             for(;;) {
                 String messageStr="你好，这是第"+messageNo+"条数据";
                 System.out.println("成功发送了"+messageNo+"条");
-                producer.send(new ProducerRecord<String, String>(topic, "Message", messageStr));
+                RecordMetadata metadata = producer.send(new ProducerRecord<String, String>(topic, "Message", messageStr)).get();
+                // 程序阻塞，直到该条消息发送成功返回元数据信息或者报错
+                StringBuilder sb = new StringBuilder();
+                sb.append("record [").append(metadata.serializedKeySize()+":"+metadata.serializedValueSize()).append("] has been sent successfully!").append("\n")
+                        .append("send to partition ").append(metadata.partition())
+                        .append(", offset = ").append(metadata.offset());
+                System.out.println(sb.toString());
                 //生产了10条就打印
 //                if(messageNo%100==0){
 //                    //System.out.println("发送的信息:" + messageStr);
