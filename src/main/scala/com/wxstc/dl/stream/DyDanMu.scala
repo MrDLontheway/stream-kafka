@@ -191,6 +191,21 @@ object DyDanMu {
       }
       rdd
     })
+
+    //计算各个礼物总数
+    val gfitCount = gift1.map(x=>{
+      (x.giftName,1)
+    }).updateStateByKey(updateFunc,new HashPartitioner(ssc.sparkContext.defaultParallelism), true).foreachRDD(rdd=>{
+      val t = rdd.collect()
+      //      val rddn = rdd.sortBy(_._2, false)
+      //      val result = rddn.take(10).toMap
+      if (t.size > 0) {
+        val jedis = JedisSingle.jedisPool.getResource
+        jedis.set("dy_giftall", JsonUtils.objectToJson(t))
+        jedis.close()
+      }
+      rdd
+    })
   }
 
 
@@ -232,33 +247,36 @@ val Array(brokers, topics, groupId, checkpoint) = args
       Subscribe[String, String](topicMap, kafkaParams)
     )
     //弹幕dstream
-    val data = messages.filter(x=>{x.topic().equals("dy_danmu")})
-      .map(x=>{
+    val dataKafka = messages.filter(x=>{x.topic().equals("dy_danmu")})
+    val data = dataKafka.map(x=>{
         (x.key(),x.value())
     })
     //礼物dstream
-    val gift = messages.filter(x=>{x.topic().equals("dy_gift")})
-      .map(x=>{
+    val giftKafka = messages.filter(x=>{x.topic().equals("dy_gift")})
+    val gift = giftKafka.map(x=>{
         (x.key(),x.value())
       })
 
     try {
       dealWithDanMu(data,ssc)
+      dataKafka.foreachRDD(rdd=>{
+        val offsetRanges = rdd.asInstanceOf[HasOffsetRanges].offsetRanges
+        dataKafka.asInstanceOf[CanCommitOffsets].commitAsync(offsetRanges)
+      })
       dealWithGift(gift,ssc,sc)
-      messages.foreachRDD(rdd=>{
+      giftKafka.foreachRDD(rdd=>{
         val offsetRanges = rdd.asInstanceOf[HasOffsetRanges].offsetRanges
 //        rdd.foreachPartition(iter => {
 //          val o: OffsetRange = offsetRanges(TaskContext.get.partitionId)
 //          println(s"OffsetRange :${o.topic} ${o.partition} ${o.fromOffset} ${o.untilOffset}")
 //        })
-//        messages.asInstanceOf[CanCommitOffsets].commitAsync(offsetRanges)
+        giftKafka.asInstanceOf[CanCommitOffsets].commitAsync(offsetRanges)
       })
     } catch {
     case e: Exception => {
       System.err.println("Exception is:" + e)
       throw new RuntimeException("Exception error!!!" + e.getMessage)
     }
-
   }
 
     ssc.start()
