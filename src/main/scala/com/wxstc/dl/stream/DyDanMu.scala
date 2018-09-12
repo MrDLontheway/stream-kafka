@@ -7,7 +7,6 @@ import com.wxstc.dl.bean._
 import com.wxstc.dl.redis.JedisSingle
 import com.wxstc.dl.util.{IKUtils, JsonUtils}
 import org.apache.kafka.common.serialization.StringDeserializer
-import org.apache.log4j.lf5.LogLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka010.ConsumerStrategies.Subscribe
 import org.apache.spark.streaming.kafka010.{CanCommitOffsets, HasOffsetRanges, KafkaUtils, OffsetRange}
@@ -259,18 +258,14 @@ val Array(brokers, topics, groupId, checkpoint) = args
 
     try {
       dealWithDanMu(data,ssc)
-      dataKafka.foreachRDD(rdd=>{
-        val offsetRanges = rdd.asInstanceOf[HasOffsetRanges].offsetRanges
-        dataKafka.asInstanceOf[CanCommitOffsets].commitAsync(offsetRanges)
-      })
       dealWithGift(gift,ssc,sc)
-      giftKafka.foreachRDD(rdd=>{
+      messages.foreachRDD(rdd=>{
         val offsetRanges = rdd.asInstanceOf[HasOffsetRanges].offsetRanges
 //        rdd.foreachPartition(iter => {
 //          val o: OffsetRange = offsetRanges(TaskContext.get.partitionId)
 //          println(s"OffsetRange :${o.topic} ${o.partition} ${o.fromOffset} ${o.untilOffset}")
 //        })
-        giftKafka.asInstanceOf[CanCommitOffsets].commitAsync(offsetRanges)
+        messages.asInstanceOf[CanCommitOffsets].commitAsync(offsetRanges)
       })
     } catch {
     case e: Exception => {
