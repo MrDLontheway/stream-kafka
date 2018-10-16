@@ -17,6 +17,7 @@
         <hadoop.version>2.6.0</hadoop.version>
         <spark.version>2.1.0</spark.version>
         <hive.version>1.1.0</hive.version>
+        <phoenix-client.version>4.7</phoenix-client.version>
         <org.apache.zookeeper.version>3.4.6</org.apache.zookeeper.version>
     </properties>
 
@@ -81,9 +82,9 @@
             <version>${hadoop.version}</version>
         </dependency>
         <dependency>
-        <groupId>org.apache.spark</groupId>
-        <artifactId>spark-streaming-kafka-0-10_${scala.version}</artifactId>
-        <version>${spark.version}</version>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-streaming-kafka-0-10_${scala.version}</artifactId>
+            <version>${spark.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
@@ -138,6 +139,35 @@
             <version>1.2.47</version>
         </dependency>
 
+        <!-- https://mvnrepository.com/artifact/org.apache.phoenix/phoenix-core -->
+        <dependency>
+            <groupId>org.apache.phoenix</groupId>
+            <artifactId>phoenix-core</artifactId>
+            <version>4.7.0-HBase-1.1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>log4j</groupId>
+                    <artifactId>log4j</artifactId>
+                </exclusion>
+            </exclusions>
+
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.apache.phoenix/phoenix-server-client -->
+        <!--<dependency>
+            <groupId>org.apache.phoenix</groupId>
+            <artifactId>phoenix-server-client</artifactId>
+            <version>4.7.0-HBase-1.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.phoenix</groupId>
+            <artifactId>phoenix-client</artifactId>
+            <version>${phoenix-client.version}</version>
+        </dependency>-->
     </dependencies>
     <repositories>
         <repository>
@@ -196,11 +226,11 @@
         </plugins>
     </build>
 
- <!--   <build>
-    <sourceDirectory>src/main/java</sourceDirectory>
-    <testSourceDirectory>src/test/java</testSourceDirectory>
-    <plugins>
+    <!--   <build>
+       <sourceDirectory>src/main/java</sourceDirectory>
+       <testSourceDirectory>src/test/java</testSourceDirectory>
+       <plugins>
 
-    </plugins>
-    </build>-->
+       </plugins>
+       </build>-->
 </project>
