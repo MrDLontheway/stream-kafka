@@ -1,8 +1,12 @@
 package com.wxstc.dl.stream;
 
+import java.text.SimpleDateFormat
+import java.util.Date
+
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.log4j.{Level, Logger}
+import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka010.ConsumerStrategies.Subscribe
 import org.apache.spark.streaming.kafka010.LocationStrategies.PreferConsistent
 import org.apache.spark.streaming.kafka010.{CanCommitOffsets, HasOffsetRanges, KafkaUtils, OffsetRange}
@@ -67,6 +71,53 @@ object WC {
     val ds1 = messages.map(x=>{
       (x.key(),x.value())
     })
+    val d2 = ds1.map(x=>("1",x))
+
+    var da: DStream[(String, (String, String))] = d2.updateStateByKey[Tuple2[String, String]]((values: Seq[Tuple2[String, String]], state: Option[Tuple2[String, String]]) => {
+//      dftmstationlineinfo.createOrReplaceTempView("TM_STATION_LINE_INFO")
+      println(state)
+      var newValue = state.getOrElse(Tuple2[String, String]("", ""))
+      var distance = newValue._1.toFloat
+      var reachtime = newValue._2.toString
+      for (value <- values) {
+        //todo 求两个站点的距离
+        distance = value._1.toFloat-distance
+        //todo 求两个站点使用时间
+        var df = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+        var thistime= df.parse(value._2).getTime
+        var lasttime= df.parse(reachtime).getTime
+        var datatime =(thistime-lasttime)/1000/60/60
+        var  speed3=distance/1000/datatime
+
+        //todo 核对数据
+        println("本次站点id:"+reachtime)
+        println("上次站点和总距离id:"+distance)
+        println("时间间隔:"+datatime)
+        println("运行速度:"+speed3)
+
+        // reachtime=speed3.toString
+        //reachtime=(thistime-lasttime).toString
+        reachtime=reachtime
+      }
+      println("=========")
+      Option[Tuple2[String, String]](distance.toString,reachtime)
+
+      var now: Date = new Date()
+      var dateFormat: SimpleDateFormat = new SimpleDateFormat("HH:mm")
+      var date = dateFormat.format(now)
+      /*if(date.equals("18:02")){
+         Option[Tuple2[Int,Int]](0,0)
+      }*/
+      //模式匹配。指定某点自动清除数据
+      date match {
+        case "11:32" => Option[Tuple2[String, String]]("", "")
+//        case _ => Option[Tuple2[String, String]](distance, reachtime)
+      }
+
+    })
+
+
+
     //弹幕dstream
     ds1.print()
 

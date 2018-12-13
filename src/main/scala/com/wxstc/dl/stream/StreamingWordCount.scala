@@ -1,8 +1,6 @@
 package com.wxstc.dl.stream
 
 //import com.wxstc.util.LoggerLevels
-import kafka.serializer.StringDecoder
-import org.I0Itec.zkclient.ZkClient
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.serialization.StringDeserializer
